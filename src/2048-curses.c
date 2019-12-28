@@ -89,8 +89,6 @@ void initpairs(void)
 }
 void initArrays(void)
 {
-	//MAIN_WIN_X = BLOCK_ARRAY_X * 6 + (BLOCK_ARRAY_X + 1) * 2;
-	//MAIN_WIN_Y = BLOCK_ARRAY_Y * 3 + BLOCK_ARRAY_Y + 1;
 	MAIN_WIN_X = CALC_WIN_X(BLOCK_ARRAY_X);
 	MAIN_WIN_Y = CALC_WIN_Y(BLOCK_ARRAY_Y);
 
@@ -153,13 +151,8 @@ void add_block(int block_value, int block_array_y, int block_array_x)
 		win_x += 8;
 
 	for (i = 0; i < 3; i++)
-	{
 		for (j = 0; j < 6; j++)
-		{
-			//win_array[win_y + i][win_x + j] = ' ' | COLOR_PAIR(CP);
 			mvwaddch(main_win, win_y + i, win_x + j, ' ' | COLOR_PAIR(CP));
-		}
-	}
 
 	if (block_value != 0)
 	{
@@ -168,10 +161,7 @@ void add_block(int block_value, int block_array_y, int block_array_x)
 
 		for (i = 0; buf[i] != '\0'; i++);
 		for (j = 0; j < i; j++)
-		{
-			//win_array[win_y + 1][win_x + 3 - i / 2 + j] = buf[j] | COLOR_PAIR(CP);
 			mvwaddch(main_win, win_y + 1, win_x + 3 - i / 2 + j, buf[j] | COLOR_PAIR(CP));
-		}
 		free(buf);
 	}
 }
@@ -188,9 +178,7 @@ _Bool can_spawn_block()
 enum signals rand_add_block(void)
 {
 	if (!can_spawn_block())
-	{
 		return sig_block_not_spawned;	
-	}
 
 	FILE *f = fopen("/dev/urandom", "r");
 	int rand_y, rand_x, rand_TwoOrFour;
