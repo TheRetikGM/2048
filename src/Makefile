@@ -10,4 +10,4 @@ dialog.o: dialog.c
 	$(CC) dialog.c -c
 
 clean:
-	rm -rf 2048-curses
+	rm -rf 2048-curses *.o

@@ -4,6 +4,8 @@
 #include <string.h>
 #include "dialog.h"
 
+#define CALC_WIN_X(block_x) (block_x * 6 + (block_x + 1) * 2)
+#define CALC_WIN_Y(block_y) (block_y * 3 + block_y + 1)
 #define EXIT_KEY 'q'
 #define CP_BACKGROUND 13
 #define CP_GRID 14
@@ -87,8 +89,10 @@ void initpairs(void)
 }
 void initArrays(void)
 {
-	MAIN_WIN_X = BLOCK_ARRAY_X * 6 + (BLOCK_ARRAY_X + 1) * 2;
-	MAIN_WIN_Y = BLOCK_ARRAY_Y * 3 + BLOCK_ARRAY_Y + 1;
+	//MAIN_WIN_X = BLOCK_ARRAY_X * 6 + (BLOCK_ARRAY_X + 1) * 2;
+	//MAIN_WIN_Y = BLOCK_ARRAY_Y * 3 + BLOCK_ARRAY_Y + 1;
+	MAIN_WIN_X = CALC_WIN_X(BLOCK_ARRAY_X);
+	MAIN_WIN_Y = CALC_WIN_Y(BLOCK_ARRAY_Y);
 
 	block_array = (int **)calloc(BLOCK_ARRAY_Y, sizeof(int *));
 	block_array_old = (int **)calloc(BLOCK_ARRAY_Y, sizeof(int *));
@@ -558,8 +562,6 @@ int main(int argc, char **argv)
 		BLOCK_ARRAY_X = atoi(argv[2]);
 	}
 
-	initArrays();
-
 	/* Start of curses */
 	initscr();
 	noecho();
@@ -572,9 +574,17 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+	getmaxyx(stdscr, maxy, maxx);
+
+	if (CALC_WIN_X(BLOCK_ARRAY_X) >= maxx || CALC_WIN_Y(BLOCK_ARRAY_Y) >= (maxy - 4)) {
+		endwin();
+		return -2;
+	}
+
+	initArrays();
+	
 	start_color();
 	initpairs();
-	getmaxyx(stdscr, maxy, maxx);
 
 	main_win_frame = newwin(MAIN_WIN_Y + 4, MAIN_WIN_X, (maxy - MAIN_WIN_Y) / 2, (maxx - MAIN_WIN_X) / 2);
 	main_win = derwin(main_win_frame, MAIN_WIN_Y, MAIN_WIN_X, 2, 0);
