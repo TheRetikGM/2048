@@ -440,7 +440,7 @@ void start_help(int help_win_y, int help_win_x, int help_pos_y, int help_pos_x)
 
 	DIALOG *about = new_dialog(
 			"2048 - About",
-			"- This vresion of 2048 was made by TheRetikGM.\n"
+			"- This version of 2048 was made by TheRetikGM.\n"
 			"- If you have any comments, please contact me on theretikgm@gmail.com",
 			about_choices, 1);
 
@@ -509,6 +509,23 @@ void start_win_dialog(int height, int width, int base_y, int base_x)
 
 	destroy_dialog(win);
 	free(win_choices);
+}
+void start_lost_dialog(int height, int width, int base_y, int base_x)
+{
+	DIALOG_CHOICE **lost_choices = malloc(sizeof(DIALOG_CHOICE *));
+	lost_choices[0] = new_choice("<Ok>", NULL);
+
+	DIALOG *lost = new_dialog(
+			"You lost!",
+			"You can't move blocks anymore!",
+			lost_choices, 1);
+	set_dialog_color(lost);
+	resize_dialog(lost, height, width);
+	move_dialog(lost, base_y, base_x);
+	start_dialog(lost);
+	
+	destroy_dialog(lost);
+	free(lost_choices);
 }
 void refresh_game(void)
 {
@@ -643,10 +660,7 @@ int main(int argc, char **argv)
 	} while ((input = wgetch(main_win)));
 
 	if (sig == sig_game_over)
-	{
-		mvprintw(0, 0, "Game Over!");
-		refresh();
-	}
+		start_lost_dialog(8, 24, (maxy - 8) / 2, (maxx - 24) / 2);
 
 	delwin(main_win);
 	delwin(main_win_frame);
