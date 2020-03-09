@@ -40,14 +40,21 @@ DIALOG *new_dialog(char *head, char *data, DIALOG_CHOICE **choices, short n_choi
 	return d;
 }
 
+void destroy_choices(DIALOG_CHOICE **choices, size_t nmemb)
+{
+	for (int i = 0; i < nmemb; i++)
+		free_choice(choices[i]);
+	free(choices);
+}
+
 void destroy_dialog(DIALOG *d)
 {
 	delwin(d->win_data);
 	delwin(d->win);
 	free(d->head);
 	free(d->data);
-	for (int i = 0; i < d->n_choices; i++)
-		free_choice(d->choices[i]);
+	//for (int i = 0; i < d->n_choices; i++)
+	//	free_choice(d->choices[i]);
 	free(d);
 }
 

@@ -6,17 +6,18 @@
 
 #define CALC_WIN_X(block_x) (block_x * 6 + (block_x + 1) * 2)
 #define CALC_WIN_Y(block_y) (block_y * 3 + block_y + 1)
-#define EXIT_KEY 'q'
-#define CP_BACKGROUND 13
-#define CP_GRID 14
-#define CP_EMPTY 15
-#define CP_SCORE 16
-#define CP_OTHER 17
-#define CP_DIALOG 18
-#define CP_DIALOG_HEAD 19
-#define CP_DIALOG_BODY 20
-#define CP_DIALOG_CHOICES 21
-#define CP_DIALOG_CHOICES_F 22
+
+#define EXIT_KEY 		'q'
+#define CP_BACKGROUND 		13
+#define CP_GRID 		14
+#define CP_EMPTY 		15
+#define CP_SCORE 		16
+#define CP_OTHER 		17
+#define CP_DIALOG 		18
+#define CP_DIALOG_HEAD 		19
+#define CP_DIALOG_BODY 		20
+#define CP_DIALOG_CHOICES 	21
+#define CP_DIALOG_CHOICES_F 	22
 
 /* Structs */
 struct cp_t
@@ -33,7 +34,9 @@ enum signals
 	sig_can_sum,
 	sig_block_zero,
 	sig_exit,
-	sig_err
+	sig_err,
+	sig_restart,
+	sig_none
 };
 enum directions
 {
@@ -45,16 +48,17 @@ enum directions
 };
 
 /* Global variables */
-int BLOCK_ARRAY_Y, BLOCK_ARRAY_X, MAIN_WIN_X, MAIN_WIN_Y;
-int **block_array;
-chtype grid;
-chtype **win_array;	// note: only test. Can be useful when I add the help window.
-WINDOW *main_win;
-WINDOW *main_win_frame;
-int **block_array_old;
-int score, score_old;
-enum signals sig;
-int winner = 0;
+int 		BLOCK_ARRAY_Y, BLOCK_ARRAY_X, MAIN_WIN_X, MAIN_WIN_Y;
+int** 		block_array;
+chtype 		grid;
+chtype**	win_array;	// array with grid
+DIALOG_CHOICE**	yesno_choices;
+WINDOW*		main_win;
+WINDOW*		main_win_frame;
+int**		block_array_old;
+int 		score, score_old;
+enum 		signals sig;
+int 		winner = 0;
 
 /* Functions */
 void initpairs(void)
@@ -123,6 +127,9 @@ void initArrays(void)
 				win_array[i][j] = ' ' | COLOR_PAIR(CP_EMPTY);
 		}
 	}
+	yesno_choices = malloc(2 * sizeof(DIALOG_CHOICE **));
+	yesno_choices[0] = new_choice("<Yes>", NULL);
+	yesno_choices[1] = new_choice("<No>", NULL);
 }
 int get_block_color(int value)
 {
@@ -401,6 +408,7 @@ void free_all(void)
 	for (i = 0; i < MAIN_WIN_Y; i++)
 		free(win_array[i]);
 	free(win_array);
+	destroy_choices(yesno_choices, 2);
 }
 
 void col_mvwprintw(short cp, WINDOW *win, int y, int x, char *str)
@@ -469,19 +477,19 @@ void start_help(int help_win_y, int help_win_x, int help_pos_y, int help_pos_x)
 
 	destroy_dialog(about);
 	destroy_dialog(help);
-	free(help_choices);
-	free(about_choices);
+	destroy_choices(help_choices, 2);
+	destroy_choices(about_choices, 1);
 }
 void start_dialog_exit(int height, int width, int base_y, int base_x)
 {
-	DIALOG_CHOICE **exit_choices = (DIALOG_CHOICE **)malloc(2 * sizeof(DIALOG_CHOICE *));
-	exit_choices[0] = new_choice("<Yes>", NULL);
-	exit_choices[1] = new_choice("<No>", NULL);
+//	DIALOG_CHOICE **exit_choices = (DIALOG_CHOICE **)malloc(2 * sizeof(DIALOG_CHOICE *));
+//	exit_choices[0] = new_choice("<Yes>", NULL);
+//	exit_choices[1] = new_choice("<No>", NULL);
 
 	DIALOG *exit = new_dialog(
 			"Exit",
 			"Are you sure?",
-			exit_choices, 2);
+			yesno_choices, 2);
 	set_dialog_color(exit);
 	resize_dialog(exit, height, width);
 	move_dialog(exit, base_y, base_x);
@@ -490,7 +498,7 @@ void start_dialog_exit(int height, int width, int base_y, int base_x)
 		sig = sig_exit;
 
 	destroy_dialog(exit);
-	free(exit_choices);
+//	free(exit_choices);
 }
 void start_win_dialog(int height, int width, int base_y, int base_x)
 {
@@ -508,7 +516,7 @@ void start_win_dialog(int height, int width, int base_y, int base_x)
 	start_dialog(win);
 
 	destroy_dialog(win);
-	free(win_choices);
+	destroy_choices(win_choices, 1);
 }
 void start_lost_dialog(int height, int width, int base_y, int base_x)
 {
@@ -525,22 +533,42 @@ void start_lost_dialog(int height, int width, int base_y, int base_x)
 	start_dialog(lost);
 	
 	destroy_dialog(lost);
-	free(lost_choices);
+	destroy_choices(lost_choices, 1);
+}
+void start_restart_dialog(int height, int width, int base_y, int base_x)
+{
+//	DIALOG_CHOICE **restart_choices = malloc(sizeof(DIALOG_CHOICE *));
+//	restart_choices[0] = new_choice("<Yes>", NULL);
+//	restart_choices[1] = new_choice("<No>", NULL);
+
+	DIALOG *res = new_dialog(
+			"Restart?",
+			"Do you want to restart 2048?",
+			yesno_choices, 2);
+	set_dialog_color(res);
+	resize_dialog(res, height, width);
+	move_dialog(res, base_y, base_x);
+
+	if (start_dialog(res) == 0)
+		sig = sig_restart;
+
+	destroy_dialog(res);
+//	free(restart_choices);
 }
 void refresh_game(void)
 {
-	//bkgd(' ' | COLOR_PAIR(CP_BACKGROUND));
-	for (int i = 0; i < getmaxy(stdscr); i++)
-		for (int j = 0; j < getmaxx(stdscr); j++)
+	int i, j;
+	for (i = 0; i < getmaxy(stdscr); i++)
+		for (j = 0; j < getmaxx(stdscr); j++)
 			mvaddch(i, j, ' ' | COLOR_PAIR(CP_BACKGROUND));
-	refresh();
-	wbkgd(main_win_frame, ' ' | COLOR_PAIR(CP_BACKGROUND));
-
-	for (int i = 0; i < MAIN_WIN_Y; i++)
-		for(int j = 0; j < MAIN_WIN_X; j++)
+	for (i = 0; i < MAIN_WIN_Y + 4; i++)
+		for (j = 0; j < MAIN_WIN_X; j++)
+			mvwaddch(main_win_frame, i, j, ' ' | COLOR_PAIR(CP_BACKGROUND));
+	for (i = 0; i < MAIN_WIN_Y; i++)
+		for(j = 0; j < MAIN_WIN_X; j++)
 			mvwaddch(main_win, i, j, win_array[i][j]);
-	for (int i = 0; i < BLOCK_ARRAY_Y; i++)
-		for (int j = 0; j < BLOCK_ARRAY_X; j++)
+	for (i = 0; i < BLOCK_ARRAY_Y; i++)
+		for (j = 0; j < BLOCK_ARRAY_X; j++)
 			add_block(block_array[i][j], i, j);
 
 	col_mvwprintw(CP_OTHER, main_win_frame, 0, 0, " 2048 ");
@@ -548,10 +576,11 @@ void refresh_game(void)
 	char under_text[7];
 	sprintf(under_text, "F1 or %c", EXIT_KEY);
 	col_mvwprintw(CP_OTHER, main_win_frame, MAIN_WIN_Y + 3, (MAIN_WIN_X - 7) / 2, under_text);
+
 	update_score();
+	refresh();
 	wrefresh(main_win_frame);
 	wrefresh(main_win);
-
 }
 
 int main(int argc, char **argv)
@@ -580,7 +609,7 @@ int main(int argc, char **argv)
 	if (!has_colors())
 	{
 		endwin();
-		printf("[ERROR] Your terminal does not support needed colors.");
+		printf("[ERROR] Your terminal does not support needed colors. (256)");
 		return -1;
 	}
 
@@ -596,9 +625,10 @@ int main(int argc, char **argv)
 	start_color();
 	initpairs();
 
-	main_win_frame = newwin(MAIN_WIN_Y + 4, MAIN_WIN_X, (maxy - MAIN_WIN_Y) / 2, (maxx - MAIN_WIN_X) / 2);
+	main_win_frame = newwin(MAIN_WIN_Y + 4, MAIN_WIN_X, (maxy - MAIN_WIN_Y - 4) / 2, (maxx - MAIN_WIN_X) / 2);
 	main_win = derwin(main_win_frame, MAIN_WIN_Y, MAIN_WIN_X, 2, 0);
 
+restart:
 	refresh();
 	refresh_game();
 
@@ -621,6 +651,11 @@ int main(int argc, char **argv)
 					wrefresh(main_win_frame);
 				}
 			}
+			else if (input == 'r')
+			{
+				start_restart_dialog(10, 30, (maxy - 10) / 2, (maxx - 30) / 2);
+				refresh_game();
+			}
 			else if (input == KEY_F(1))
 			{
 				start_help(help_win_y, help_win_x, (maxy - help_win_y) / 2, (maxx - help_win_x) / 2);
@@ -632,9 +667,21 @@ int main(int argc, char **argv)
 				refresh_game();
 			}
 
-			if (sig != sig_exit)
-				continue;
-			break;
+			if (sig == sig_exit)
+				break;
+			else if (sig == sig_restart)
+			{
+				score = 0;
+				update_score();
+				for (int y = 0; y < BLOCK_ARRAY_Y; y++)
+					for (int x = 0; x < BLOCK_ARRAY_X; x++)
+						block_array_old[y][x] = block_array[y][x] = 0;
+				input = 0;
+				winner = 0;
+				sig = sig_none;
+				goto restart;
+
+			}
 		}
 		for (int y = 0; y < BLOCK_ARRAY_Y; y++)
 			for (int x = 0; x < BLOCK_ARRAY_X; x++)

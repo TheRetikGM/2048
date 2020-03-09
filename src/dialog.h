@@ -26,3 +26,4 @@ void show_dialog(DIALOG *d);
 void move_dialog(DIALOG *d, int y, int c);
 int start_dialog(DIALOG *d);
 void dialog_copy_styles(DIALOG *d1, DIALOG *d2);
+void destroy_choices(DIALOG_CHOICE **choices, size_t nmemb);
