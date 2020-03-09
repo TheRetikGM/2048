@@ -529,9 +529,12 @@ void start_lost_dialog(int height, int width, int base_y, int base_x)
 }
 void refresh_game(void)
 {
-	bkgd(COLOR_PAIR(CP_BACKGROUND));
+	//bkgd(' ' | COLOR_PAIR(CP_BACKGROUND));
+	for (int i = 0; i < getmaxy(stdscr); i++)
+		for (int j = 0; j < getmaxx(stdscr); j++)
+			mvaddch(i, j, ' ' | COLOR_PAIR(CP_BACKGROUND));
 	refresh();
-	wbkgd(main_win_frame, COLOR_PAIR(CP_BACKGROUND));
+	wbkgd(main_win_frame, ' ' | COLOR_PAIR(CP_BACKGROUND));
 
 	for (int i = 0; i < MAIN_WIN_Y; i++)
 		for(int j = 0; j < MAIN_WIN_X; j++)
@@ -545,8 +548,10 @@ void refresh_game(void)
 	char under_text[7];
 	sprintf(under_text, "F1 or %c", EXIT_KEY);
 	col_mvwprintw(CP_OTHER, main_win_frame, MAIN_WIN_Y + 3, (MAIN_WIN_X - 7) / 2, under_text);
+	update_score();
 	wrefresh(main_win_frame);
 	wrefresh(main_win);
+
 }
 
 int main(int argc, char **argv)
